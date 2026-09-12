@@ -1,0 +1,29 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "OpenAI Compatible Conversation",
+        "description": "Connect to any OpenAI-compatible /chat/completions endpoint (Volcengine Ark, SiliconFlow, OpenRouter, Ollama, etc.).",
+        "data": {
+          "name": "Name",
+          "base_url": "Base URL",
+          "api_key": "API Key",
+          "model": "Model / endpoint ID"
+        }
+      },
+      "reconfigure": {
+        "title": "Reconfigure OpenAI Compatible Conversation",
+        "description": "Update Base URL / API Key / Model for this integration.",
+        "data": {
+          "name": "Name",
+          "base_url": "Base URL",
+          "api_key": "API Key",
+          "model": "Model / endpoint ID"
+        }
+      }
+    },
+    "error": {
+      "need_api_key": "API Key is required"
+    }
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "OpenAI 兼容对话",
+        "description": "连接任意 OpenAI 兼容的 /chat/completions 服务(火山方舟、硅基流动、OpenRouter、Ollama 等)。填完即可用。",
+        "data": {
+          "name": "显示名称",
+          "base_url": "Base URL",
+          "api_key": "API Key",
+          "model": "模型 / 接入点 ID"
+        }
+      },
+      "reconfigure": {
+        "title": "重新配置 OpenAI 兼容对话",
+        "description": "修改此集成的 Base URL / API Key / Model。",
+        "data": {
+          "name": "显示名称",
+          "base_url": "Base URL",
+          "api_key": "API Key",
+          "model": "模型 / 接入点 ID"
+        }
+      }
+    },
+    "error": {
+      "need_api_key": "需要填写 API Key"
+    }
+  }
+}
