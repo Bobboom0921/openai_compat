@@ -1,0 +1,11 @@
+{
+  "domain": "llm_assist_compat",
+  "name": "LLM Assist API Compat",
+  "codeowners": ["@Bobboom0921"],
+  "config_flow": false,
+  "documentation": "https://github.com/Bobboom0921/openai_compat",
+  "iot_class": "local_polling",
+  "integration_type": "service",
+  "version": "0.1.0",
+  "loggers": ["custom_components.llm_assist_compat"]
+}

@@ -99,6 +99,56 @@ curl -H "Authorization: Bearer 你的KEY" \
 
 - 组件中的 `_async_handle_message(self, user_input, chat_log)` 必须收两个参数（HA 2026.8+）。`_async_handle_message` 调用 `chat_log.async_provide_llm_data()`（HA/Claw 在这里注入工具），随后工具循环内用 aiohttp 直连 `/chat/completions` 并解析 `tool_calls`，经 `chat_log.async_add_assistant_content()` 让 HA 执行工具，最后由 `conversation.async_get_result_from_chat_log()` 产出最终结果。这是 v2.0.0 起的「协议合规大脑」写法。
 - 品牌图标由 `make_icon.py` 生成（纯标准库，无第三方依赖），位于 `brand/icon.png`。
+- 本仓库同时附带一个独立小集成 [`llm_assist_compat`](custom_components/llm_assist_compat/)，用途见下节。
+
+---
+
+## 附带集成：`llm_assist_compat`（AssistAPI 兼容层）
+
+### 它解决什么
+
+- HA **≤ 2026.7** 时代，`homeassistant.helpers.llm` 里定义有 `class AssistAPI`，被 **Claw Assistant** 等旧协议组件在启动时打 patch 使用。
+- HA **2026.8** 重构了 LLM 协议（改为 `async_register_api` + `async_get_apis` 注册制），从 `helpers.llm` **删除**了 `AssistAPI`，导致仍按其旧接口挂载的组件 `AttributeError: module 'homeassistant.helpers.llm' has no attribute 'AssistAPI'`，启动直接失败。
+- 本集成所做的唯一事情：在加载时把 `AssistAPI` 以一个**静态兼容桩**补回 `llm` 模块，让 Claw 等旧组件的快照/打 patch 不再崩。（2026.8 的 assist 走的是新协议，并不真正调用这个类，所以桩方法只需“存在且可调用”。）
+
+### 安装
+
+把 `custom_components/llm_assist_compat/` 整个目录随本组件一起放进 HA 的 `custom_components/` 下，重启即可。
+
+### 让它在 Claw 之前生效（关键）
+
+`config_flow: false` 的集成，HA 默认不加载、独立创建也不保证时序。要让注入在 Claw 之前跑，任选一种**可靠**方式：
+
+1. **在 `configuration.yaml` 声明（推荐）**：
+   ```yaml
+   llm_assist_compat:
+   ```
+   HA 会在初始化早期加载它并执行注入。
+
+2. **在 Claw 的 `manifest.json` 里把本次定义为依赖**，把 `after_dependencies` 追加 `llm_assist_compat`：
+   ```json
+   "after_dependencies": ["assist_pipeline", "llm_assist_compat"]
+   ```
+
+3. **最简单省事（无需本集成）**：直接在 Claw 的 `runtime/llm/internal_llm.py` 里，`from homeassistant.helpers import llm` 之后插入以下桩（Claw 更新后需重新加）：
+   ```python
+   if not hasattr(llm, "AssistAPI"):
+       class _AssistCompat:
+           def __init__(self, hass=None):
+               self.hass = hass
+           @staticmethod
+           def _async_get_api_prompt(_ctx, _exposed=None) -> str:
+               return ""
+           @staticmethod
+           def _async_get_tools(_ctx, _exposed=None):
+               return []
+           @staticmethod
+           async def async_get_api_instance(_ctx):
+               return None
+       llm.AssistAPI = _AssistCompat
+   ```
+
+> 前提：你的 HA 必须是 **2026.8**（`AssistAPI` 被删的那版）。旧版 HA 自带你无需本集成。
 
 ## License
 
