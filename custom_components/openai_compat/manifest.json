@@ -6,6 +6,6 @@
   "documentation": "https://github.com/Bobboom0921/openai_compat",
   "iot_class": "cloud_polling",
   "integration_type": "service",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "loggers": ["custom_components.openai_compat"]
 }

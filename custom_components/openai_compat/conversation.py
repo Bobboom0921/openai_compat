@@ -16,7 +16,7 @@ import logging
 from typing import Any
 
 import aiohttp
-from probatio import to_openapi  # HA 内置依赖,不触发版本锁
+from voluptuous_openapi import convert  # HA 稳定版自带,2026.8 官方 openai 同款
 
 from homeassistant.components import conversation
 from homeassistant.components.conversation import (
@@ -42,18 +42,21 @@ MAX_TOOL_ITERATIONS = 10
 
 
 def _format_tool(tool: llm.Tool) -> dict[str, Any]:
-    """把一个 HA llm.Tool 转成 OpenAI 兼容的 function tool schema。"""
-    parameters = to_openapi(
-        tool.parameters,
-        custom_serializer=llm.selector_serializer,
-        openapi_version="3.1.0",
-    )
+    """把一个 HA llm.Tool 转成 OpenAI 兼容的 function tool schema。
+
+    与官方 openai_conversation(2026.8.3) 的 _format_tool 同构:
+    用 voluptuous_openapi.convert 序列化,并剔除 vol 生成的不被 OpenAI 接受的键。
+    """
+    unsupported_keys = {"oneOf", "anyOf", "allOf", "enum", "not"}
+    schema = convert(tool.parameters, custom_serializer=llm.selector_serializer)
+    if unsupported_keys.intersection(schema):
+        schema = {k: v for k, v in schema.items() if k not in unsupported_keys}
     return {
         "type": "function",
         "function": {
             "name": tool.name,
             "description": tool.description or "",
-            "parameters": parameters,
+            "parameters": schema,
         },
     }
 
