@@ -193,7 +193,8 @@ class OpenAICompatEntity(ConversationEntity):
                 "model": model,
                 "messages": api_messages,
                 "temperature": cfg.get(CONF_TEMPERATURE, 0.2),
-                "max_tokens": cfg.get(CONF_MAX_TOKENS, 1024),
+                # 方舟/兼容网关要求 max_tokens 是整数(NumberSelector 可能回传 float)
+                "max_tokens": int(cfg.get(CONF_MAX_TOKENS, 1024)),
             }
             if tools:
                 payload["tools"] = tools

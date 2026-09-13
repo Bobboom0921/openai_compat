@@ -75,6 +75,9 @@ def _finalize_data(user_input: dict) -> dict:
     data = dict(user_input)
     enable_assist = bool(data.pop("enable_assist", True))
     data[CONF_LLM_HASS_API] = "assist" if enable_assist else None
+    # HA NumberSelector 在 BOX 模式可能回传 float(如 1024.0),
+    # 方舟/兼容网关要求 max_tokens 为整数,故统一强转 int。
+    data[CONF_MAX_TOKENS] = int(data.get(CONF_MAX_TOKENS, 1024))
     return data
 
 
