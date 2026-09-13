@@ -15,6 +15,7 @@
 - 零 Python 依赖，只用一个内置的 aiohttp 请求，装完即可用。
 - **任意 OpenAI 兼容服务商**：火山方舟、硅基流动、OpenRouter、DeepSeek 官方、本地 Ollama / vLLM 网关等，只改 Base URL 即可切换。
 - **真正的多轮对话**：自动利用 HA 的 `chat_log` 历史，把前几轮上下文喂进 messages，不再只发当句话。
+- **工具调用（function calling）**：接入 HA 标准 `llm` 工具协议，兼容 Claw Assistant 等多轮工具循环，可真正执行设备控制（开/关灯、调空调、场景等），而非只回复不动作。
 - 配置后可随时「配置」改 Base URL / API Key / Model，无需删了重建。
 - 内置简体中文配置向导与错误提示。
 - 兼容 HA Core **2026.8**（`ConversationEntity` 新协议）。
@@ -46,12 +47,15 @@
 
 ## 配置
 
-| 字段      | 说明                                                                   |
-|-----------|------------------------------------------------------------------------|
-| Name      | 集成显示名，例如「火山方舟」                                             |
-| Base URL  | OpenAI 兼容的 API 根地址，默认火山方舟 `…/api/v3`，末尾**不带** `/chat/completions` |
-| API Key   | 你的服务商 API Key                                                     |
-| Model     | 模型 / 接入点 ID（火山方舟用 `ep-…` 或模型名，详见下方排查）               |
+| 字段       | 说明                                                                   |
+|------------|-----------------------------------------------------------------------|
+| Name       | 集成显示名，例如「火山方舟」                                             |
+| Base URL   | OpenAI 兼容的 API 根地址，默认火山方舟 `…/api/v3`，末尾**不带** `/chat/completions` |
+| API Key    | 你的服务商 API Key                                                     |
+| Model      | 模型 / 接入点 ID（火山方舟用 `ep-…` 或模型名，详见下方排查）               |
+| 温度       | 抽样随机性 0–2，默认 0.2                                                 |
+| 最大输出 Token | 单次回答长度上限，默认 1024                                            |
+| 启用 HA 设备控制工具 | 开启后接入 HA 工具协议（assist / Claw 多轮工具循环），可真正调用 `light.turn_on` 等控制设备 |
 
 添加后会出现一个 `conversation.*` 对话实体（名字 = 你填的 Name）。在 **开发者工具 → 对话** 选它即可测试。
 
@@ -93,7 +97,7 @@ curl -H "Authorization: Bearer 你的KEY" \
 
 ## 协议与开发
 
-- 组件中的 `_async_handle_message(self, user_input, chat_log)` 必须收两个参数（HA 2026.8+），响应用 `intent.IntentResponse` + `async_set_speech`，并需 `async_add_assistant_content_without_tools` 回写历史。
+- 组件中的 `_async_handle_message(self, user_input, chat_log)` 必须收两个参数（HA 2026.8+）。`_async_handle_message` 调用 `chat_log.async_provide_llm_data()`（HA/Claw 在这里注入工具），随后工具循环内用 aiohttp 直连 `/chat/completions` 并解析 `tool_calls`，经 `chat_log.async_add_assistant_content()` 让 HA 执行工具，最后由 `conversation.async_get_result_from_chat_log()` 产出最终结果。这是 v2.0.0 起的「协议合规大脑」写法。
 - 品牌图标由 `make_icon.py` 生成（纯标准库，无第三方依赖），位于 `brand/icon.png`。
 
 ## License

@@ -8,7 +8,10 @@
           "name": "Name",
           "base_url": "Base URL",
           "api_key": "API Key",
-          "model": "Model / endpoint ID"
+          "model": "Model / endpoint ID",
+          "temperature": "Temperature (sampling randomness)",
+          "max_tokens": "Max output tokens",
+          "enable_assist": "Enable HA device-control tools (assist)"
         }
       },
       "reconfigure": {
@@ -18,7 +21,10 @@
           "name": "Name",
           "base_url": "Base URL",
           "api_key": "API Key",
-          "model": "Model / endpoint ID"
+          "model": "Model / endpoint ID",
+          "temperature": "Temperature (sampling randomness)",
+          "max_tokens": "Max output tokens",
+          "enable_assist": "Enable HA device-control tools (assist)"
         }
       }
     },

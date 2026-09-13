@@ -1,3 +1,6 @@
 DOMAIN = "openai_compat"
 CONF_BASE_URL = "base_url"
 CONF_MODEL = "model"
+CONF_MAX_TOKENS = "max_tokens"
+CONF_TEMPERATURE = "temperature"
+CONF_LLM_HASS_API = "llm_hass_api"
