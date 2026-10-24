@@ -16,7 +16,13 @@ import logging
 from typing import Any
 
 import aiohttp
-from voluptuous_openapi import convert  # HA 稳定版自带,2026.8 官方 openai 同款
+
+# HA 2026.9 起官方改用 probatio 生成 OpenAPI schema(voluptuous_openapi 已从镜像移除),
+# 2026.8.x 仍只有 voluptuous_openapi;两者签名一致,故做兼容导入,同时支持 2026.8 / 2026.9。
+try:
+    from probatio import to_openapi  # HA 2026.9+
+except ImportError:  # HA 2026.8.x
+    from voluptuous_openapi import convert as to_openapi
 
 from homeassistant.components import conversation
 from homeassistant.components.conversation import (
@@ -41,14 +47,20 @@ _LOGGER = logging.getLogger(__name__)
 MAX_TOOL_ITERATIONS = 10
 
 
-def _format_tool(tool: llm.Tool) -> dict[str, Any]:
+def _format_tool(
+    tool: llm.Tool, custom_serializer: Any = None
+) -> dict[str, Any]:
     """把一个 HA llm.Tool 转成 OpenAI 兼容的 function tool schema。
 
-    与官方 openai_conversation(2026.8.3) 的 _format_tool 同构:
-    用 voluptuous_openapi.convert 序列化,并剔除 vol 生成的不被 OpenAI 接受的键。
+    与官方 openai_conversation(2026.9.4) 的 _format_tool 同构:
+    用 probatio.to_openapi(旧版退回 voluptuous_openapi.convert)序列化,
+    并剔除 vol 生成的不被 OpenAI 接受的键。
     """
     unsupported_keys = {"oneOf", "anyOf", "allOf", "enum", "not"}
-    schema = convert(tool.parameters, custom_serializer=llm.selector_serializer)
+    schema = to_openapi(
+        tool.parameters,
+        custom_serializer=custom_serializer or llm.selector_serializer,
+    )
     if unsupported_keys.intersection(schema):
         schema = {k: v for k, v in schema.items() if k not in unsupported_keys}
     return {
@@ -183,7 +195,10 @@ class OpenAICompatEntity(ConversationEntity):
             chat_log.async_add_assistant_content_without_tools(content)
             return
 
-        tools = [_format_tool(tool) for tool in llm_api.tools]
+        # 2026.9 起 APIInstance 可能自带 custom_serializer(官方 openai 集成同款用法)
+        tools = [
+            _format_tool(tool, llm_api.custom_serializer) for tool in llm_api.tools
+        ]
 
         # 维护一个随多轮累积的 OpenAI messages
         api_messages = _content_to_openai_messages(chat_log.content)

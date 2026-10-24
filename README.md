@@ -2,7 +2,7 @@
 
 [![HACS](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/Bobboom0921/openai_compat)
 [![GitHub Release](https://img.shields.io/github/v/release/Bobboom0921/openai_compat)](https://github.com/Bobboom0921/openai_compat/releases)
-[![HA](https://img.shields.io/static/v1.svg?label=HA&message=2026.8%2B&color=3498db)](https://github.com/Bobboom0921/openai_compat)
+[![HA](https://img.shields.io/static/v1.svg?label=HA&message=2026.8%20~%202026.9&color=3498db)](https://github.com/Bobboom0921/openai_compat)
 
 一个**轻量、通用**的 Home Assistant 对话集成。用 aiohttp 直连任意 **OpenAI 兼容** `POST /chat/completions` 端点，让外部大模型服务成为 HA 的对话智能体（Assistant / Assist Pipeline / Claw Assistant 可用）。
 
@@ -92,8 +92,23 @@ curl -H "Authorization: Bearer 你的KEY" \
 
 ## 兼容性
 
-- 基于 HA Core **2026.8** 的 `ConversationEntity` 新协议编写。
+- 基于 HA Core **2026.8 / 2026.9** 的 `ConversationEntity` 新协议编写。
+- **2026.9 起** HA 镜像移除了 `voluptuous_openapi`，改用 `probatio.to_openapi` 生成工具 schema；本组件已做兼容导入，两个版本都能装。
 - 零额外依赖，理论上向后兼容 2025.x。若你版本更早且有差异请提 issue。
+
+## 更新日志
+
+### v2.1.0 — 支持 HA 2026.9.4
+
+- 修复 HA 2026.9.4 下 `ModuleNotFoundError: No module named 'voluptuous_openapi'` 导致的集成加载失败。
+- `_format_tool` 优先使用 `probatio.to_openapi`，旧版 HA 自动回退到 `voluptuous_openapi.convert`。
+- 工具 schema 序列化优先采用 `llm.APIInstance.custom_serializer`（2026.9 官方 openai 集成同款），无则回退 `llm.selector_serializer`。
+- 顺带修复「配置」按钮（reconfigure）必崩的老问题：`async_update_reentry_and_finish` 在 HA 中并不存在，改用官方 `async_update_reload_and_abort`。
+- 无配置变更，覆盖升级后重启即可。
+
+### v2.0.3
+
+- 附带 `llm_assist_compat` 兼容集成，修复 Claw Assistant 在 2026.8 下因 `llm.AssistAPI` 被删而启动失败。
 
 ## 协议与开发
 

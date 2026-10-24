@@ -117,7 +117,10 @@ class OpenAIModConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 data = _finalize_data(user_input)
                 if not data.get(CONF_LLM_HASS_API):
                     del data[CONF_LLM_HASS_API]
-                return self.async_update_reentry_and_finish(
+                # 2026.8/2026.9 的正确写法:更新条目并重载
+                # (旧写法 async_update_reentry_and_finish 在 HA 里并不存在,「配置」按钮必崩)
+                return self.async_update_reload_and_abort(
+                    entry,
                     data=data,
                     title=data[CONF_NAME],
                 )
