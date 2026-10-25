@@ -98,6 +98,12 @@ curl -H "Authorization: Bearer 你的KEY" \
 
 ## 更新日志
 
+### v2.1.1 — 支持 HA 2026.10.1
+
+- 修复点击「配置」时的 `500 Internal Server Error`：HA 的 `OptionsFlow` 构造函数不再接收 `config_entry`，旧写法 `OpenAIModOptionsFlow(entry)` 直接 `TypeError`。
+- 选项表单改成与添加集成时一致的完整表单，保存后直接更新配置条目并生效（原来是个空表单，改不了任何东西）。
+- 无配置迁移，覆盖升级后重启即可。
+
 ### v2.1.0 — 支持 HA 2026.9.4
 
 - 修复 HA 2026.9.4 下 `ModuleNotFoundError: No module named 'voluptuous_openapi'` 导致的集成加载失败。

@@ -87,7 +87,9 @@ class OpenAIModConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     @staticmethod
     def async_get_options_flow(entry):
-        return OpenAIModOptionsFlow(entry)
+        # HA 2024.12 起 OptionsFlow 构造函数不再接收 config_entry(2026.10 亦同),
+        # 传入 entry 会 TypeError -> 前端「配置」报 500。条目通过 self.config_entry 取。
+        return OpenAIModOptionsFlow()
 
     async def async_step_user(self, user_input=None):
         """首次添加集成。"""
@@ -130,11 +132,29 @@ class OpenAIModConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
 
 class OpenAIModOptionsFlow(config_entries.OptionsFlow):
-    """选项流程:允许独立于基础信息调整(最小实现,便于将来扩展)。"""
+    """选项流程(「配置」按钮):复用同一张表单,直接改 entry.data。
+
+    本集成的运行参数都存放在 entry.data(不是 options),所以这里显式调用
+    async_update_entry;更新监听器会同步刷新 hass.data,无需重建条目。
+    """
 
     async def async_step_init(self, user_input=None):
+        errors = {}
         if user_input is not None:
-            return self.async_create_entry(title="", data=user_input)
+            if not user_input.get(CONF_API_KEY):
+                errors[CONF_API_KEY] = "need_api_key"
+            else:
+                data = _finalize_data(user_input)
+                if not data.get(CONF_LLM_HASS_API):
+                    data.pop(CONF_LLM_HASS_API, None)
+                self.hass.config_entries.async_update_entry(
+                    self.config_entry,
+                    data=data,
+                    title=data[CONF_NAME],
+                )
+                return self.async_create_entry(title="", data={})
         return self.async_show_form(
-            step_id="init", data_schema=vol.Schema({})
+            step_id="init",
+            data_schema=_schema(dict(self.config_entry.data)),
+            errors=errors,
         )
